@@ -8,6 +8,16 @@ output "function_app_default_hostname" {
   description = "Deployed function app hostname"
 }
 
+
+output "key_vault_endpoint" {
+  value = azurerm_key_vault.key-vault.vault_uri
+}
+
+output "key_vault_id" {
+  value = azurerm_key_vault.key-vault.id
+}
+
+
 ////////////////////
 
 /*

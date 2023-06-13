@@ -57,6 +57,17 @@ resource "azurerm_app_service_plan" "app_service_plan" {
   }
 }
 
+data "azurerm_key_vault" "key-vault" {
+  name                = "SLkvTerraformRTQwpi"
+  resource_group_name = azurerm_resource_group.resource_group.name
+}
+
+
+data "azurerm_key_vault_secret" "key-vault-secret" {
+  name         = "TerraformSecret"
+  key_vault_id = data.azurerm_key_vault.key-vault.id
+}
+ 
 resource "azurerm_function_app" "function_app" {
   name                       = "${var.project}-${var.environment}-func-app"
   resource_group_name        = azurerm_resource_group.resource_group.name
@@ -65,7 +76,12 @@ resource "azurerm_function_app" "function_app" {
   app_settings = {
     "WEBSITE_RUN_FROM_PACKAGE"       = "",
     "APPINSIGHTS_INSTRUMENTATIONKEY" = azurerm_application_insights.application_insights.instrumentation_key,
+    //"EventGridEndpoint" = var.eventgrid_endpoint
+    "KeyVaultEndpoint"  = data.azurerm_key_vault_secret.key-vault-secret.value
+
   }
+
+
   os_type = "linux"
   storage_account_name       = azurerm_storage_account.storage_account.name
   storage_account_access_key = azurerm_storage_account.storage_account.primary_access_key
