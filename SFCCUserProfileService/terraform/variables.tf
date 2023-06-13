@@ -165,5 +165,5 @@ variable "kv_secret_name" {
 variable "kv_secret_value" {
     description = "Azure Key Vault Secret Value"
     type = string
-    default = "Terraform Secret"
+    default = "AccountEndpoint=https://cosmodbadmin.documents.azure.com:443/;AccountKey=GwHeHkvSrF7iVsfRtHglDaB1tikWWIffXDxqCF2yyz2SeHP7kpypiVd6z3OjctKfzfzM1S2m3vMXACDbAgZInQ==;"
 }

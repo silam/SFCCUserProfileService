@@ -77,7 +77,7 @@ resource "azurerm_function_app" "function_app" {
     "WEBSITE_RUN_FROM_PACKAGE"       = "",
     "APPINSIGHTS_INSTRUMENTATIONKEY" = azurerm_application_insights.application_insights.instrumentation_key,
     //"EventGridEndpoint" = var.eventgrid_endpoint
-    "KeyVaultEndpoint"  = data.azurerm_key_vault_secret.key-vault-secret.value
+    "CosmosDBConnectionString"  = data.azurerm_key_vault_secret.key-vault-secret.value
 
   }
 

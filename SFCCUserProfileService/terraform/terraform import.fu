@@ -1,0 +1,18 @@
+terraform import azurerm_function_app.function_app   /subscriptions/264a2087-c116-4fbf-a051-7209921e0896/resourceGroups/rgSLTerraformRTQwpi/providers/Microsoft.Web/sites/sfccuserprofile-dev-func-app
+
+terraform import azurerm_application_insights.application_insights /subscriptions/264a2087-c116-4fbf-a051-7209921e0896/resourceGroups/rgSLTerraformRTQwpi/providers/Microsoft.Insights/components/sfccuserprofile-dev-appinsight
+
+terrafrom import azurerm_function_app.function_app   /subscriptions/264a2087-c116-4fbf-a051-7209921e0896/resourceGroups/rgSLTerraformRTQwpi/providers/Microsoft.Web/sites/sfccuserprofile-dev-func-app
+
+terraform import azurerm_app_service_plan.app_service_plan  /subscriptions/264a2087-c116-4fbf-a051-7209921e0896/resourceGroups/rgSLTerraformRTQwpi/providers/Microsoft.Web/serverfarms/sfccuserprofile-dev-appserviceplan
+
+
+terraform import azurerm_storage_account.storage_account  /subscriptions/264a2087-c116-4fbf-a051-7209921e0896/resourceGroups/rgSLTerraformRTQwpi/providers/Microsoft.Storage/storageAccounts/sfccuserprofiledevsakv
+
+
+terraform import azurerm_key_vault_secret.key-vault-secret   https://slkvterraformrtqwpi.vault.azure.net/secrets/TerraformSecret/a2d5e1a9d4904b0f9c6587d5c29a6402
+
+terraform import azurerm_key_vault.key-vault    /subscriptions/264a2087-c116-4fbf-a051-7209921e0896/resourceGroups/rgSLTerraformRTQwpi/providers/Microsoft.KeyVault/vaults/SLkvTerraformRTQwpi
+
+
+terraform import azurerm_resource_group.resource_group /subscriptions/264a2087-c116-4fbf-a051-7209921e0896/resourceGroups/rgSLTerraformRTQwpi
