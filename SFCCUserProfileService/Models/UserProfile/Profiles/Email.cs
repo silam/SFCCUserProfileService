@@ -1,0 +1,14 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace SFCCUserProfileService.Models.UserProfile.Profiles
+{
+    public class Email
+    {
+        public string personal;
+        public bool validated;
+    }
+}

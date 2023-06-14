@@ -12,6 +12,7 @@ using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
 using System.ComponentModel;
+using SFCCUserProfileService.Models.UserProfile;
 
 namespace SFCCUserProfileService
 {
@@ -32,54 +33,62 @@ namespace SFCCUserProfileService
            
             if ( req.Method == "GET" )
             {
-                string id = req.Query["id"];
-
-
-                // New instance of CosmosClient class
-                using CosmosClient client = new CosmosClient(newconfiguration.GetSection("CosmosDBConnectionString").Value);
-               
-                // Database reference with creation if it does not already exist
-                Database database = client.GetDatabase(id: "user_profile");
-
-
-                // Container reference with creation if it does not alredy exist
-                Microsoft.Azure.Cosmos.Container container = database.GetContainer(id: "id");
-
-                QueryDefinition query;
-                // Create query using a SQL string and parameters
-                if (id == null || id == string.Empty)
+                try
                 {
-                    query = new QueryDefinition(
-                                query: "SELECT * FROM id"
-                        );
-                }
-                else
-                {
-                    query = new QueryDefinition(
-                               query: "SELECT * FROM id WHERE id.id = @id"
-                       )
-                   .WithParameter("@id", id);
-                }
+                    string id = req.Query["person_key"];
 
 
-                using FeedIterator<UserProfile> feed = container.GetItemQueryIterator<UserProfile>(
-                    queryDefinition: query
-                );
+                    // New instance of CosmosClient class
+                    using CosmosClient client = new CosmosClient(newconfiguration.GetSection("CosmosDBConnectionString").Value);
 
-                List<UserProfile> users = new List<UserProfile>();
+                    // Database reference with creation if it does not already exist
+                    Database database = client.GetDatabase(id: "user_profile");
 
-                while (feed.HasMoreResults)
-                {
-                    FeedResponse<UserProfile> response = await feed.ReadNextAsync();
-                    foreach (var item in response)
+
+                    // Container reference with creation if it does not alredy exist
+                    Microsoft.Azure.Cosmos.Container container = database.GetContainer(id: "userprofile");
+
+                    QueryDefinition query;
+                    // Create query using a SQL string and parameters
+                    if (id == null || id == string.Empty)
                     {
-                        users.Add(item);
+                        query = new QueryDefinition(
+                                    query: "SELECT * FROM userprofile"
+                            );
+                    }
+                    else
+                    {
+                        query = new QueryDefinition(
+                                   query: "SELECT * FROM userprofile  WHERE userprofile.person_key = @id"
+                           )
+                       .WithParameter("@id", id);
                     }
 
+
+                    using FeedIterator<UserProfile> feed = container.GetItemQueryIterator<UserProfile>(
+                        queryDefinition: query
+                    );
+
+                    List<UserProfile> users = new List<UserProfile>();
+
+                    while (feed.HasMoreResults)
+                    {
+                        FeedResponse<UserProfile> response = await feed.ReadNextAsync();
+                        foreach (var item in response)
+                        {
+                            users.Add(item);
+                        }
+
+                    }
+
+
+                    return new OkObjectResult(users);
                 }
-
-
-                return new OkObjectResult(users);
+                catch (Exception ex)
+                {
+                    return null;
+                }
+                
             }
             else if ( req.Method == "POST")
             {
@@ -88,13 +97,13 @@ namespace SFCCUserProfileService
                 string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
 
                 UserProfile data = JsonConvert.DeserializeObject<UserProfile>(requestBody);
-                string id = data?.id;
+                string id = data?.person_key;
                 string first_name = data?.first_name;
                 string last_name = data?.last_name;
-                string billing_zipcode = data?.billing_zipcode;
-                string billing_address = data?.billing_address;
-                string email = data?.email;
-                string billing_state = data?.billing_state;
+                //string billing_zipcode = data?.billing_zipcode;
+                //string billing_address = data?.billing_address;
+                //string email = data?.email;
+                //string billing_state = data?.billing_state;
 
 
                 // New instance of CosmosClient class
@@ -109,19 +118,19 @@ namespace SFCCUserProfileService
 
                 UserProfile r = new UserProfile()
                 {
-                   id = id,
+                   person_key = id,
                    first_name = first_name,
                    last_name = last_name,
-                   billing_zipcode = billing_zipcode,
-                   billing_address = billing_address,
-                   email = email,
-                   billing_state = billing_state
+                   //billing_zipcode = billing_zipcode,
+                   //billing_address = billing_address,
+                   //email = email,
+                   //billing_state = billing_state
                 };
                                   
 
                 UserProfile item = await container.CreateItemAsync<UserProfile>(
                        item: r,
-                       partitionKey: new PartitionKey(r.id.ToString())
+                       partitionKey: new PartitionKey(r.person_key.ToString())
                    );
 
                 return new OkObjectResult(data);
@@ -132,13 +141,13 @@ namespace SFCCUserProfileService
                 {
                     List<UserProfile> users = new List<UserProfile>();
 
-                    string id = req.Query["id"];
+                    string id = req.Query["person_key"];
 
                     using CosmosClient client = new CosmosClient(newconfiguration.GetSection("CosmosDBConnectionString").Value);
                     Database database = client.GetDatabase(id: "user_profile");
 
 
-                    Microsoft.Azure.Cosmos.Container container = database.GetContainer(id: "id");
+                    Microsoft.Azure.Cosmos.Container container = database.GetContainer(id: "userprofile");
                     //ResponseMessage deleteResponse = await container.DeleteAllItemsByPartitionKeyStreamAsync(new PartitionKey("Contoso"));
 
                     // Delete an item. Note we must provide the partition key value and id of the item to delete
@@ -169,13 +178,13 @@ namespace SFCCUserProfileService
                     string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
 
                     UserProfile data = JsonConvert.DeserializeObject<UserProfile>(requestBody);
-                    string id = data?.id;
+                    string id = data?.person_key;
                     string first_name = data?.first_name;
                     string last_name = data?.last_name;
-                    string billing_zipcode = data?.billing_zipcode;
-                    string billing_address = data?.billing_address;
-                    string email = data?.email;
-                    string billing_state = data?.billing_state;
+                    //string billing_zipcode = data?.billing_zipcode;
+                    //string billing_address = data?.billing_address;
+                    //string email = data?.email;
+                    //string billing_state = data?.billing_state;
 
                     Microsoft.Azure.Cosmos.Container container = database.GetContainer(id: "id");
 
@@ -185,14 +194,14 @@ namespace SFCCUserProfileService
                     // update FirstName
                     itemBody.first_name = first_name == null ? itemBody.first_name : first_name;
                     itemBody.last_name = last_name == null ? itemBody.last_name : last_name;
-                    itemBody.email = email == null ? itemBody.email : email;
-                    itemBody.billing_address = billing_address == null ? itemBody.billing_address : billing_address;
-                    itemBody.billing_state = billing_state == null ? itemBody.billing_state : billing_state;
-                    itemBody.billing_zipcode = billing_zipcode == null ? itemBody.billing_zipcode : billing_zipcode;
+                    //itemBody.email = email == null ? itemBody.email : email;
+                    //itemBody.billing_address = billing_address == null ? itemBody.billing_address : billing_address;
+                    //itemBody.billing_state = billing_state == null ? itemBody.billing_state : billing_state;
+                    //itemBody.billing_zipcode = billing_zipcode == null ? itemBody.billing_zipcode : billing_zipcode;
 
 
                     // replace/update the item with the updated content
-                    ItemResponse<UserProfile> newUser = await container.ReplaceItemAsync<UserProfile>(itemBody, itemBody.id, new PartitionKey(itemBody.id));
+                    ItemResponse<UserProfile> newUser = await container.ReplaceItemAsync<UserProfile>(itemBody, itemBody.person_key, new PartitionKey(itemBody.person_key));
 
                     return new OkObjectResult(itemBody);
                 }
