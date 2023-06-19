@@ -8,6 +8,7 @@ namespace SFCCUserProfileService.Models.UserProfile
 {
     public class UserProfile
     {
+        public string record_id { get; set; }
         public string person_key { get; set; }
         public string first_name { get; set; }
 
