@@ -27,7 +27,7 @@ namespace SFCCUserProfileService.Models.UserProfile
         [JsonPropertyName("ufx_information")]
         public UfxInformation ufx_information;
 
-        public List<RelatedAccount> related_accounts = new List<RelatedAccount>();
+        //public List<RelatedAccount> related_accounts = new List<RelatedAccount>();
 
         public string profile_notes;
 

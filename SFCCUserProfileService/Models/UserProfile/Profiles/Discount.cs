@@ -8,5 +8,6 @@ namespace SFCCUserProfileService.Models.UserProfile.Profiles
 {
     public class Discount
     {
+        
     }
 }
