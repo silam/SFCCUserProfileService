@@ -20,7 +20,7 @@ using System.Text.Json.Serialization;
 
 namespace SFCCUserProfileService.API
 {
-    public static class GetUserProfile
+    public class GetUserProfile
     {
         [FunctionName("UserProfiles")]
         public static async Task<IActionResult> Run(
