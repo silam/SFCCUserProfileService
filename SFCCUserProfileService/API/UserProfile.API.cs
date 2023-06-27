@@ -34,7 +34,9 @@ namespace SFCCUserProfileService.API
                                     .AddEnvironmentVariables()
                                     .Build();
             var storageaccountconnectionString = "DefaultEndpointsProtocol=https;AccountName=slazureautonumber;AccountKey=+NvGarHB994j8xGysbPYNaYuxw37IfKubrjAlW7vZPM9X9/88pD6+WB4r4PjCG5HWlgKTbtltX8o+AStzvbcUg==;EndpointSuffix=core.windows.net";
+            var CosmosDBConnectionString = "AccountEndpoint=https://cosmodbadmin.documents.azure.com:443/;AccountKey=GwHeHkvSrF7iVsfRtHglDaB1tikWWIffXDxqCF2yyz2SeHP7kpypiVd6z3OjctKfzfzM1S2m3vMXACDbAgZInQ==;";
 
+            using CosmosClient client = new CosmosClient(CosmosDBConnectionString);
 
             if (req.Method == "GET")
             {
@@ -47,7 +49,10 @@ namespace SFCCUserProfileService.API
                     string phone = req.Query["phone"];
 
                     // New instance of CosmosClient class
-                    using CosmosClient client = new CosmosClient(newconfiguration.GetSection("CosmosDBConnectionString").Value);
+                    //using CosmosClient client = new CosmosClient(newconfiguration.GetSection("CosmosDBConnectionString").Value);
+
+                    //using CosmosClient client = new CosmosClient(CosmosDBConnectionString);
+
 
                     // Database reference with creation if it does not already exist
                     Database database = client.GetDatabase(id: "user_profile");
@@ -216,7 +221,7 @@ namespace SFCCUserProfileService.API
 
 
                     // New instance of CosmosClient class
-                    using CosmosClient client = new CosmosClient(newconfiguration.GetSection("CosmosDBConnectionString").Value);
+                    ///using CosmosClient client = new CosmosClient(newconfiguration.GetSection("CosmosDBConnectionString").Value);
 
                     // Database reference with creation if it does not already exist
                     Database database = client.GetDatabase(id: "user_profile");
@@ -282,7 +287,7 @@ namespace SFCCUserProfileService.API
                     UserProfile data = JsonConvert.DeserializeObject<UserProfile>(requestBody);
 
 
-                    using CosmosClient client = new CosmosClient(newconfiguration.GetSection("CosmosDBConnectionString").Value);
+                    //using CosmosClient client = new CosmosClient(newconfiguration.GetSection("CosmosDBConnectionString").Value);
                     Database database = client.GetDatabase(id: "user_profile");
 
 
@@ -312,7 +317,7 @@ namespace SFCCUserProfileService.API
             {
                 try
                 {
-                    using CosmosClient client = new CosmosClient(newconfiguration.GetSection("CosmosDBConnectionString").Value);
+                    //using CosmosClient client = new CosmosClient(newconfiguration.GetSection("CosmosDBConnectionString").Value);
                     Database database = client.GetDatabase(id: "user_profile");
                     string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
 

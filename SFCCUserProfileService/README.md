@@ -85,6 +85,9 @@
     "id": "25eafa50-dd46-4d8e-88ac-f48a2887b283",
   
 }
+# Install
+
+choco install azure-functions-core-tools
 
 # Steps to deplou azure function using Terraform
 
