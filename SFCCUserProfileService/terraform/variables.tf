@@ -13,6 +13,10 @@ variable "location" {
   description = "Azure region"
 }
 
+variable "archive_file" {
+  type = string
+  description = "Zip file name"
+}
 ///////////////////////////////////////////////
 
 /*

@@ -25,10 +25,14 @@ provider "azurerm" {
 
 }
 
+// Resource Group
 resource "azurerm_resource_group" "resource_group" {
   name = var.rg_name //"${var.project}-${var.environment}-kvrg"
   location = var.rg_location
 }
+
+
+// storage account
 
 resource "azurerm_storage_account" "storage_account" {
   name = "${var.project}${var.environment}sakv"
@@ -38,6 +42,117 @@ resource "azurerm_storage_account" "storage_account" {
   account_replication_type = "LRS"
 }
 
+/*
+resource "azurerm_storage_account" "sa-ufDeployTF" {
+  name                     = "saufdeploytfsa"
+  resource_group_name      = azurerm_resource_group.resource_group.name    
+  location                 = var.location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+}
+*/
+
+//////////////////// Storage Container
+/*
+resource "azurerm_storage_container" "sc-ufDeployTF" {
+  name                  = "function-releases"
+  //resource_group_name   = azurerm_resource_group.resource_group.name        
+  storage_account_name  = "${azurerm_storage_account.sa-ufDeployTF.name}"
+  container_access_type = "private"
+}
+*/
+
+resource "azurerm_storage_container" "storage_container" {
+  name                  = "function-releases"
+  //resource_group_name   = azurerm_resource_group.resource_group.name        
+  storage_account_name  = "${azurerm_storage_account.storage_account.name}"
+  container_access_type = "private"
+}
+
+
+//////////////////// Blob
+
+resource "azurerm_storage_blob" "storage_blob" {
+  name = "${filesha256("uffunctionapp.zip")}.zip"
+  storage_account_name = azurerm_storage_account.storage_account.name
+  storage_container_name = azurerm_storage_container.storage_container.name //"${azurerm_storage_container.sc-ufDeployTF.name}" //
+  type = "Block"
+  source = "uffunctionapp.zip"
+
+
+}
+
+/*
+resource "azurerm_storage_blob" "sb-ufDeployTF" {
+  name = "functionapp"
+
+  //resource_group_name    = azurerm_resource_group.resource_group.name 
+  storage_account_name   = "${azurerm_storage_account.sa-ufDeployTF.name}"
+  storage_container_name = "${azurerm_storage_container.sc-ufDeployTF.name}"
+
+  type   = "Block"
+  source = "C:\\publish\\functionApp.zip"
+}
+*/
+
+/////////// Storage account SAS
+
+
+data "azurerm_storage_account_sas" "storage_account_sas" {
+  connection_string = "${azurerm_storage_account.storage_account.primary_connection_string}"
+  https_only        = false
+
+  resource_types {
+    service   = false
+    container = false
+    object    = true
+  }
+
+  services {
+    blob  = true
+    queue = false
+    table = false
+    file  = false
+  }
+
+  start  = "2023-06-01"
+  expiry = "2025-06-01"
+
+  permissions {
+    read    = true
+    write   = false
+    delete  = false
+    list    = false
+    add     = false
+    create  = false
+    update  = false
+    process = false
+  }
+}
+
+
+
+/// Container SAS
+
+data "azurerm_storage_account_blob_container_sas" "storage_account_blob_container_sas" {
+  connection_string = azurerm_storage_account.storage_account.primary_connection_string
+  container_name    = "${azurerm_storage_container.storage_container.name}" //azurerm_storage_container.storage_container.name
+
+  start = "2023-06-01T00:00:00Z"
+  expiry = "2025-06-01T00:00:00Z"
+
+  permissions {
+    read   = true
+    add    = false
+    create = false
+    write  = false
+    delete = false
+    list   = false
+  }
+}
+
+// app insight
+
 resource "azurerm_application_insights" "application_insights" {
   name                = "${var.project}-${var.environment}-appinsight"
   location            = var.location
@@ -45,6 +160,8 @@ resource "azurerm_application_insights" "application_insights" {
   application_type    = "web"
 }
 
+
+///// App Serivce Plan
 resource "azurerm_app_service_plan" "app_service_plan" {
   name                = "${var.project}-${var.environment}-appserviceplan"
   resource_group_name = azurerm_resource_group.resource_group.name
@@ -57,19 +174,19 @@ resource "azurerm_app_service_plan" "app_service_plan" {
   }
 }
 
-data "azurerm_key_vault" "key-vault" {
-  name                = "SLkvTerraformRTQwpi"
-  resource_group_name = azurerm_resource_group.resource_group.name
+/////////////////////  ZIP func app
+data "archive_file" "file_function_app" {
+  type        = "zip"
+  source_dir  = "C:\\publish\\functionApp"
+  output_path = "uffunctionapp.zip"
 }
 
 
-data "azurerm_key_vault_secret" "key-vault-secret" {
-  name         = "TerraformSecret"
-  key_vault_id = data.azurerm_key_vault.key-vault.id
-}
- 
+///////////////////// Func APP
+
+/*
 resource "azurerm_function_app" "function_app" {
-  name                       = "${var.project}-${var.environment}-func-app"
+  name                       = "${var.project}-${var.environment}-func01-app"
   resource_group_name        = azurerm_resource_group.resource_group.name
   location                   = var.location
   app_service_plan_id        = azurerm_app_service_plan.app_service_plan.id
@@ -85,14 +202,68 @@ resource "azurerm_function_app" "function_app" {
   os_type = "linux"
   storage_account_name       = azurerm_storage_account.storage_account.name
   storage_account_access_key = azurerm_storage_account.storage_account.primary_access_key
-  version                    = "~3"
+  version                    = "~4"
 
   lifecycle {
     ignore_changes = [
       app_settings["WEBSITE_RUN_FROM_PACKAGE"],
     ]
+  } 
+}
+*/
+
+resource "azurerm_function_app" "function_app" {
+  name                       = "${var.project}-func03-app"
+  resource_group_name        = azurerm_resource_group.resource_group.name
+  location                   = var.location
+  app_service_plan_id        = azurerm_app_service_plan.app_service_plan.id
+  app_settings = {
+    "WEBSITE_RUN_FROM_PACKAGE"    = "https://${azurerm_storage_account.storage_account.name}.blob.core.windows.net/${azurerm_storage_container.storage_container.name}/${azurerm_storage_blob.storage_blob.name}${data.azurerm_storage_account_blob_container_sas.storage_account_blob_container_sas.sas}",
+    "FUNCTIONS_WORKER_RUNTIME" = "dotnet",
+    "AzureWebJobsDisableHomepage" = "false",
+  }
+  //os_type = "linux"
+  site_config { 
+      dotnet_framework_version = "v5.0" 
+  }
+  storage_account_name       = azurerm_storage_account.storage_account.name
+  storage_account_access_key = azurerm_storage_account.storage_account.primary_access_key
+  version                    = "~4"
+}
+
+
+
+
+/*
+resource "azurerm_function_app" "SFCCUFDeployTF" {
+  name                      = "SFCCUserProfileDeployTF"
+  location                  = var.location
+  resource_group_name       = azurerm_resource_group.resource_group.name 
+  app_service_plan_id       = "${azurerm_app_service_plan.app_service_plan.id}"
+  storage_connection_string = "${azurerm_storage_account.sa-ufDeployTF.primary_connection_string}"
+
+  app_settings = {
+    HASH            = "${filebase64sha256("C:\\publish\\functionApp.zip")}"
+    WEBSITE_USE_ZIP = "https://${azurerm_storage_account.sa-ufDeployTF.name}.blob.core.windows.net/${azurerm_storage_container.sc-ufDeployTF.name}/${azurerm_storage_blob.sb-ufDeployTF.name}${data.azurerm_storage_account_sas.sas-ufDeployTF.sas}"
   }
 }
+*/
+
+
+////// Key Vault
+
+data "azurerm_key_vault" "key-vault" {
+  name                = "SLkvTerraformRTQwpi"
+  resource_group_name = azurerm_resource_group.resource_group.name
+}
+
+
+data "azurerm_key_vault_secret" "key-vault-secret" {
+  name         = "TerraformSecret"
+  key_vault_id = data.azurerm_key_vault.key-vault.id
+}
+ 
+
 
 /////////////////////////////////////////
 // Key Vault
