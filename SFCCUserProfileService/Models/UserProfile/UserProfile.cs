@@ -15,7 +15,7 @@ namespace SFCCUserProfileService.Models.UserProfile
 
         public string last_name { get; set; }
 
-        public bool rwsc_employee { get; set; }
+        public bool ? rwsc_employee { get; set; }
 
         public Profile profile { get; set; }
 

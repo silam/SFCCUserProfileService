@@ -10,7 +10,7 @@ namespace SFCCUserProfileService.Models.UserProfile.Profiles
     {
         public string type;
         public string number;
-        public bool sms_capable;
-        public bool validated;
+        public bool ? sms_capable;
+        public bool ? validated;
     }
 }

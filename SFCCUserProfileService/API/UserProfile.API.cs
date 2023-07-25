@@ -18,6 +18,7 @@ using AutoNumber;
 using SFCCUserProfileService.Models.UserProfile.Profiles;
 using System.Text.Json.Serialization;
 
+
 namespace SFCCUserProfileService.API
 {
     public class GetUserProfile
@@ -213,11 +214,9 @@ namespace SFCCUserProfileService.API
 
                     string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
 
-                    UserProfile data = JsonConvert.DeserializeObject<UserProfile>(requestBody);
-                    string person_key = data?.person_key;
-                    string first_name = data?.first_name;
-                    string last_name = data?.last_name;
-                    Profile _profile = data?.profile;
+                    //UserProfile data = JsonConvert.DeserializeObject<UserProfile>(requestBody);
+
+                    List<UserProfile> dataLst = JsonConvert.DeserializeObject<List<UserProfile>>(requestBody);
 
 
                     // New instance of CosmosClient class
@@ -230,42 +229,64 @@ namespace SFCCUserProfileService.API
                     // Container reference with creation if it does not alredy exist
                     Microsoft.Azure.Cosmos.Container container = database.GetContainer(id: "userprofile");
 
-                    List<Address> addresses = new List<Address>(
 
-                    )
+                    for ( int i = 0; i < 100000; i++)
                     {
-                        new Address()
+                        dataLst = JsonConvert.DeserializeObject<List<UserProfile>>(requestBody);
+
+                        foreach (var data in dataLst)
                         {
-                            city = "Hamel",
-                                 postal_code = "55340",
-                                 state = "MN",
-                                 delivery = "1313 Mockingbird Lane",
-                                 type = "shipping"
+                            record_id = idGen.NextId("SFCCUniversalProfile");
+
+                            var record_id_str = record_id.ToString();
+                            string person_key = data?.person_key + record_id_str;
+                            string first_name = data?.first_name + record_id_str;
+                            string last_name = data?.last_name + record_id_str;
+                            Profile _profile = data?.profile;
+
+
+                            Profile profile = new Profile();
+
+                            foreach (var email in _profile.emails)
+                            {
+                                email.personal = record_id_str + email.personal;
+                            }
+
+                            foreach (var a in _profile.addresses)
+                            {
+                                a.delivery = record_id_str + " " + a.delivery;
+                            }
+
+                            foreach (var p in _profile.phones)
+                            {
+                                p.number = record_id_str + p.number;
+                            }
+
+                            profile = _profile;
+
+                            UserProfile r = new UserProfile()
+                            {
+                                id = Guid.NewGuid().ToString(),
+                                record_id = record_id.ToString(),
+                                person_key = person_key,
+                                first_name = first_name,
+                                last_name = last_name,
+                                profile = profile
+                            };
+
+
+                            UserProfile item = await container.CreateItemAsync(
+                               item: r,
+                               partitionKey: new PartitionKey(r.record_id.ToString())
+                           );
+
+                            //System.Threading.Thread.Sleep(1);
+                            Console.WriteLine("Record " + i);
                         }
-                    };
+                    }
+                    
 
-
-                    Profile profile = new Profile();
-
-                    profile = _profile;
-
-                    UserProfile r = new UserProfile()
-                    {
-                        id = Guid.NewGuid().ToString(),
-                        record_id = record_id.ToString(),
-                        person_key = person_key,
-                        first_name = first_name,
-                        last_name = last_name,
-                        profile = profile
-                    };
-
-
-                    UserProfile item = await container.CreateItemAsync(
-                       item: r,
-                       partitionKey: new PartitionKey(r.record_id.ToString())
-                   );
-
-                    return new OkObjectResult(data);
+                    return new OkObjectResult(dataLst);
 
                 }
                 catch (Exception ex)

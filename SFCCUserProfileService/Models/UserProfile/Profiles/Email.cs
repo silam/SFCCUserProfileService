@@ -9,6 +9,6 @@ namespace SFCCUserProfileService.Models.UserProfile.Profiles
     public class Email
     {
         public string personal;
-        public bool validated;
+        public bool ? validated;
     }
 }
