@@ -230,7 +230,7 @@ namespace SFCCUserProfileService.API
                     Microsoft.Azure.Cosmos.Container container = database.GetContainer(id: "userprofile");
 
 
-                    for ( int i = 0; i < 100000; i++)
+                    for ( int i = 0; i < 1000000; i++)
                     {
                         dataLst = JsonConvert.DeserializeObject<List<UserProfile>>(requestBody);
 
@@ -280,7 +280,7 @@ namespace SFCCUserProfileService.API
                                partitionKey: new PartitionKey(r.record_id.ToString())
                            );
 
-                            //System.Threading.Thread.Sleep(1);
+                            System.Threading.Thread.Sleep(1);
                             Console.WriteLine("Record " + i);
                         }
                     }
