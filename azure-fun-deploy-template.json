@@ -1,0 +1,51 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "appService_SFCCUserProfileService20230726212639_name": {
+      "type": "string"
+    },
+    "storageaccount_cs210032000991f293e": {
+      "type": "string"
+    },
+    "appInsights_sfccuserprofile-dev-appinsight": {
+      "type": "string"
+    }
+  },
+  "resources": [
+    {
+      "location": "Central US",
+      "name": "[parameters('appService_SFCCUserProfileService20230726212639_name')]",
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2018-02-01",
+      "kind": "functionapp",
+      "properties": {
+        "name": "[parameters('appService_SFCCUserProfileService20230726212639_name')]",
+        "httpsOnly": true,
+        "reserved": false,
+        "siteConfig": {
+          "ftpsState": "FtpsOnly",
+          "netFrameworkVersion": "v6.0"
+        }
+      },
+      "resources": [
+        {
+          "name": "appsettings",
+          "type": "config",
+          "apiVersion": "2018-02-01",
+          "dependsOn": [
+            "[concat('Microsoft.Web/Sites/', parameters('appService_SFCCUserProfileService20230726212639_name'))]"
+          ],
+          "properties": {
+            "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('storageaccount_cs210032000991f293e'), ';AccountKey=', listKeys(resourceId('cloud-shell-storage-eastus','Microsoft.Storage/storageAccounts', parameters('storageaccount_cs210032000991f293e')), '2017-10-01').keys[0].value, ';EndpointSuffix=', 'core.windows.net')]",
+            "WEBSITE_CONTENTSHARE": "[toLower(parameters('appService_SFCCUserProfileService20230726212639_name'))]",
+            "AzureWebJobsStorage": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('storageaccount_cs210032000991f293e'), ';AccountKey=', listKeys(resourceId('cloud-shell-storage-eastus','Microsoft.Storage/storageAccounts', parameters('storageaccount_cs210032000991f293e')), '2017-10-01').keys[0].value, ';EndpointSuffix=', 'core.windows.net')]",
+            "FUNCTIONS_EXTENSION_VERSION": "~4",
+            "FUNCTIONS_WORKER_RUNTIME": "dotnet",
+            "APPLICATIONINSIGHTS_CONNECTION_STRING": "[reference(resourceId('rgSLTerraformRTQwpi','microsoft.insights/components', parameters('appInsights_sfccuserprofile-dev-appinsight')),'2020-02-02').ConnectionString]"
+          }
+        }
+      ]
+    }
+  ]
+}
