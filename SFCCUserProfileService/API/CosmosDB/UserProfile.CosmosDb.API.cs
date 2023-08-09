@@ -25,7 +25,7 @@ namespace SFCCUserProfileService.API.CosmosDB
     {
         [FunctionName("CosmosDbUserProfiles")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", "delete", "put", Route = "CosmosDb")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", "delete", "put", Route = "CosmosDb/UserProfiles")] HttpRequest req,
             ILogger log, ExecutionContext context)
         {
             var newconfiguration = new ConfigurationBuilder()
@@ -35,8 +35,8 @@ namespace SFCCUserProfileService.API.CosmosDB
                                     .AddEnvironmentVariables()
                                     .Build();
             var storageaccountconnectionString = "DefaultEndpointsProtocol=https;AccountName=slazureautonumber;AccountKey=+NvGarHB994j8xGysbPYNaYuxw37IfKubrjAlW7vZPM9X9/88pD6+WB4r4PjCG5HWlgKTbtltX8o+AStzvbcUg==;EndpointSuffix=core.windows.net";
-            var CosmosDBConnectionString = "AccountEndpoint=https://cosmodbadmin.documents.azure.com:443/;AccountKey=GwHeHkvSrF7iVsfRtHglDaB1tikWWIffXDxqCF2yyz2SeHP7kpypiVd6z3OjctKfzfzM1S2m3vMXACDbAgZInQ==;";
-
+            var CosmosDBConnectionStringhotmail = "AccountEndpoint=https://cosmodbadmin.documents.azure.com:443/;AccountKey=GwHeHkvSrF7iVsfRtHglDaB1tikWWIffXDxqCF2yyz2SeHP7kpypiVd6z3OjctKfzfzM1S2m3vMXACDbAgZInQ==;";
+            var CosmosDBConnectionString  = "AccountEndpoint=https://dev-uppoc-acdb.documents.azure.com:443/;AccountKey=GfQGzQxuSXhUQFa5irQPKf1V2qytsrzUkpPkJIBcRewM0JwLKetuuB4x8ZOGu8PpzCocgUaGCxMhACDbBZ93VQ==;";
             using CosmosClient client = new CosmosClient(CosmosDBConnectionString);
 
             if (req.Method == "GET")
@@ -56,11 +56,11 @@ namespace SFCCUserProfileService.API.CosmosDB
 
 
                     // Database reference with creation if it does not already exist
-                    Database database = client.GetDatabase(id: "user_profile");
+                    Database database = client.GetDatabase(id: "user_profile_db");
 
 
                     // Container reference with creation if it does not alredy exist
-                    Microsoft.Azure.Cosmos.Container container = database.GetContainer(id: "userprofile");
+                    Microsoft.Azure.Cosmos.Container container = database.GetContainer(id: "user_profile");
 
                     QueryDefinition query;
                     // Create query using a SQL string and parameters
@@ -207,7 +207,7 @@ namespace SFCCUserProfileService.API.CosmosDB
 
                     // generate ids with different scopes
 
-                    var record_id = idGen.NextId("SFCCUniversalProfile");
+                    //var record_id = idGen.NextId("SFCCUniversalProfile");
 
 
                     List<UserProfile> users = new List<UserProfile>();
@@ -223,11 +223,11 @@ namespace SFCCUserProfileService.API.CosmosDB
                     ///using CosmosClient client = new CosmosClient(newconfiguration.GetSection("CosmosDBConnectionString").Value);
 
                     // Database reference with creation if it does not already exist
-                    Database database = client.GetDatabase(id: "user_profile");
+                    Database database = client.GetDatabase(id: "user_profile_db");
 
 
                     // Container reference with creation if it does not alredy exist
-                    Microsoft.Azure.Cosmos.Container container = database.GetContainer(id: "userprofile");
+                    Microsoft.Azure.Cosmos.Container container = database.GetContainer(id: "user_profile");
 
 
                     for (int i = 0; i < 1000000; i++)
@@ -236,7 +236,7 @@ namespace SFCCUserProfileService.API.CosmosDB
 
                         foreach (var data in dataLst)
                         {
-                            record_id = idGen.NextId("SFCCUniversalProfile");
+                           var record_id = idGen.NextId("SFCCUniversalProfile");
 
                             var record_id_str = record_id.ToString();
                             string person_key = data?.person_key + record_id_str;
@@ -309,10 +309,10 @@ namespace SFCCUserProfileService.API.CosmosDB
 
 
                     //using CosmosClient client = new CosmosClient(newconfiguration.GetSection("CosmosDBConnectionString").Value);
-                    Database database = client.GetDatabase(id: "user_profile");
+                    Database database = client.GetDatabase(id: "user_profile_db");
 
 
-                    Microsoft.Azure.Cosmos.Container container = database.GetContainer(id: "userprofile");
+                    Microsoft.Azure.Cosmos.Container container = database.GetContainer(id: "user_profile");
                     //ResponseMessage deleteResponse = await container.DeleteAllItemsByPartitionKeyStreamAsync(new PartitionKey("Contoso"));
 
                     // Delete an item. Note we must provide the partition key value and id of the item to delete
@@ -339,7 +339,7 @@ namespace SFCCUserProfileService.API.CosmosDB
                 try
                 {
                     //using CosmosClient client = new CosmosClient(newconfiguration.GetSection("CosmosDBConnectionString").Value);
-                    Database database = client.GetDatabase(id: "user_profile");
+                    Database database = client.GetDatabase(id: "user_profile_db");
                     string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
 
                     UserProfile data = JsonConvert.DeserializeObject<UserProfile>(requestBody);
@@ -349,7 +349,7 @@ namespace SFCCUserProfileService.API.CosmosDB
                     string last_name = data?.last_name;
 
 
-                    Microsoft.Azure.Cosmos.Container container = database.GetContainer(id: "userprofile");
+                    Microsoft.Azure.Cosmos.Container container = database.GetContainer(id: "user_profile");
 
                     ItemResponse<UserProfile> user = await container.ReadItemAsync<UserProfile>(id, new PartitionKey(record_id));
                     var itemBody = user.Resource;
