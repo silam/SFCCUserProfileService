@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace SFCCUserProfileService.Models.UserProfile
 {
-    public class UserProfile
+    public class OutUserProfile
     {
         public string id { get; set; }
         public string record_id { get; set; }
@@ -17,7 +17,7 @@ namespace SFCCUserProfileService.Models.UserProfile
 
         public bool? rwsc_employee { get; set; } = true;
 
-        public Profile profile { get; set; }
+        public dynamic profile { get; set; }
 
     }
 }

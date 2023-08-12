@@ -35,8 +35,8 @@ namespace SFCCUserProfileService.API.CosmosDB
                                     .AddEnvironmentVariables()
                                     .Build();
             var storageaccountconnectionString = "DefaultEndpointsProtocol=https;AccountName=slazureautonumber;AccountKey=+NvGarHB994j8xGysbPYNaYuxw37IfKubrjAlW7vZPM9X9/88pD6+WB4r4PjCG5HWlgKTbtltX8o+AStzvbcUg==;EndpointSuffix=core.windows.net";
-            var CosmosDBConnectionStringhotmail = "AccountEndpoint=https://cosmodbadmin.documents.azure.com:443/;AccountKey=GwHeHkvSrF7iVsfRtHglDaB1tikWWIffXDxqCF2yyz2SeHP7kpypiVd6z3OjctKfzfzM1S2m3vMXACDbAgZInQ==;";
-            var CosmosDBConnectionString  = "AccountEndpoint=https://dev-uppoc-acdb.documents.azure.com:443/;AccountKey=GfQGzQxuSXhUQFa5irQPKf1V2qytsrzUkpPkJIBcRewM0JwLKetuuB4x8ZOGu8PpzCocgUaGCxMhACDbBZ93VQ==;";
+            //var CosmosDBConnectionStringhotmail = "AccountEndpoint=https://cosmodbadmin.documents.azure.com:443/;AccountKey=GwHeHkvSrF7iVsfRtHglDaB1tikWWIffXDxqCF2yyz2SeHP7kpypiVd6z3OjctKfzfzM1S2m3vMXACDbAgZInQ==;";
+            var CosmosDBConnectionString  = "AccountEndpoint=https://dev-uppoc-acdb.documents.azure.com:443/;AccountKey=GfQGzQxuSXhUQFa5irQPKf1V2qytsrzUkpPkJIBcRewM0JwLKetuuB4x8ZOGu8PpzCocgUaGCxMhACDbBZ93VQ==;EndpointSuffix=core.windows.net";
             using CosmosClient client = new CosmosClient(CosmosDBConnectionString);
 
             if (req.Method == "GET")
@@ -58,9 +58,11 @@ namespace SFCCUserProfileService.API.CosmosDB
                     // Database reference with creation if it does not already exist
                     Database database = client.GetDatabase(id: "user_profile_db");
 
+                    log.LogInformation("Get Database " + DateTime.Now.Ticks);
 
                     // Container reference with creation if it does not alredy exist
                     Microsoft.Azure.Cosmos.Container container = database.GetContainer(id: "user_profile");
+                    log.LogInformation("Get Containter " + DateTime.Now.Ticks);
 
                     QueryDefinition query;
                     // Create query using a SQL string and parameters
@@ -79,14 +81,12 @@ namespace SFCCUserProfileService.API.CosmosDB
                         else
                         {
                             query = new QueryDefinition(
-                                  query: "SELECT * FROM userprofile  WHERE userprofile.person_key = @id"
+                                  query: "SELECT * FROM c  WHERE c.person_key = @id"
                           )
                       .WithParameter("@id", id);
                         }
 
                     }
-
-
                     else if (firstName != null)
                     {
                         if (firstName == string.Empty)
@@ -102,9 +102,12 @@ namespace SFCCUserProfileService.API.CosmosDB
                         else
                         {
                             query = new QueryDefinition(
-                                 query: "SELECT * FROM userprofile  WHERE userprofile.first_name = @firstName"
+                                 query: "SELECT * FROM c  WHERE c.first_name = @firstName"
                          )
-                     .WithParameter("@firstName", firstName);
+                            .WithParameter("@firstName", firstName);
+
+                            log.LogInformation("Get Data by First Name " + firstName  + " Time = "+ DateTime.Now.Ticks);
+
                         }
 
                     }
@@ -124,9 +127,12 @@ namespace SFCCUserProfileService.API.CosmosDB
                         else
                         {
                             query = new QueryDefinition(
-                                  query: "SELECT * FROM userprofile  WHERE userprofile.last_name = @lastName"
+                                  query: "SELECT * FROM c  WHERE c.last_name = @lastName"
                           )
                       .WithParameter("@lastName", lastName);
+
+                            log.LogInformation("Get Data by Last Name " + lastName + " Time " + DateTime.Now.Ticks);
+
                         }
 
                     }
@@ -150,12 +156,15 @@ namespace SFCCUserProfileService.API.CosmosDB
 
 
                             query = new QueryDefinition(
-                             query: " SELECT c.person_key, c.id, c.first_name," +
-                                       "c.last_name,c.record_id, c.rwsc_employee ," +
+                             query: "SELECT c.person_key, c.id, c.first_name," +
+                                       "c.last_name,c.record_id," +
                                        "c.profile FROM c JOIN zc IN c.profile.emails " +
                                        "WHERE zc.personal = @email"
-                     )
-                 .WithParameter("@email", email);
+                                     )
+                                 .WithParameter("@email", email);
+
+                            log.LogInformation("Get Data by Email = " + email + " Time " + DateTime.Now.Ticks);
+
 
 
                         }
@@ -164,7 +173,7 @@ namespace SFCCUserProfileService.API.CosmosDB
                     else
                     {
                         query = new QueryDefinition(
-                                    query: "SELECT * FROM userprofile"
+                                    query: "SELECT * FROM c"
                             );
 
                     }
@@ -174,15 +183,21 @@ namespace SFCCUserProfileService.API.CosmosDB
                         queryDefinition: query
                     );
 
+                    log.LogInformation("Call GetItemQueryIterator " + DateTime.Now.Ticks);
+
                     List<UserProfile> users = new List<UserProfile>();
 
                     while (feed.HasMoreResults)
                     {
                         FeedResponse<UserProfile> response = await feed.ReadNextAsync();
+                        log.LogInformation("feed ReadNextAsync " + DateTime.Now.Ticks);
+
+
                         foreach (var item in response)
                         {
                             users.Add(item);
                         }
+                        log.LogInformation("Call ReadNextAsync " + DateTime.Now.Ticks);
 
                     }
 
@@ -191,6 +206,8 @@ namespace SFCCUserProfileService.API.CosmosDB
                 }
                 catch (Exception ex)
                 {
+                    log.LogError("Error " + ex.Message);
+
                     return null;
                 }
 
@@ -230,7 +247,7 @@ namespace SFCCUserProfileService.API.CosmosDB
                     Microsoft.Azure.Cosmos.Container container = database.GetContainer(id: "user_profile");
 
 
-                    for (int i = 0; i < 1000000; i++)
+                    for (int i = 0; i < 1; i++)
                     {
                         dataLst = JsonConvert.DeserializeObject<List<UserProfile>>(requestBody);
 
