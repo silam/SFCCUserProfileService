@@ -25,9 +25,9 @@ namespace SFCCUserProfileService.API.SqlDB
 {
     public class GetSqlDbUserProfile
     {
-        [FunctionName("SqlDbUserProfiles")]
+        [FunctionName("GetSqlDbUserProfile")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", "delete", "put", Route = "SqlDb/UserProfiles")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "SqlDb/UserProfiles")] HttpRequest req,
             ILogger log, ExecutionContext context)
         {
             var newconfiguration = new ConfigurationBuilder()
@@ -88,7 +88,51 @@ namespace SFCCUserProfileService.API.SqlDB
 
                                         user.last_name = reader["last_name"].ToString();
                                         user.person_key = reader["person_key"].ToString();
+                                        user.id = reader["id"].ToString();
 
+                                        dynamic json = JsonConvert.DeserializeObject(reader["profile"].ToString());
+
+                                        user.profile = json;
+
+                                        profiles.Add(user);
+                                    }
+                                }
+                            }
+
+                        }
+                        else if (lastName != null)
+                        {
+                            if (lastName == string.Empty)
+                            {
+                                return new ContentResult()
+                                {
+                                    Content = "lastName is empty",
+                                    ContentType = "appliation/json",
+                                    StatusCode = 400
+
+                                };
+                            }
+                            else
+                            {
+                                SqlCommand cmd = new SqlCommand("dbo.GetUserProfileByLastName", conn);
+
+                                cmd.CommandType = CommandType.StoredProcedure;
+
+                                cmd.Parameters.Add(new SqlParameter("@lname", lastName));
+
+                                // execute the command
+                                using (SqlDataReader reader = cmd.ExecuteReader())
+                                {
+                                    // iterate through results, printing each to console
+                                    while (reader.Read())
+                                    {
+                                        var user = new OutUserProfile();
+                                        user.id = reader["id"].ToString();
+                                        user.record_id = reader["record_id"].ToString();
+                                        user.first_name = reader["first_name"].ToString();
+
+                                        user.last_name = reader["last_name"].ToString();
+                                        user.person_key = reader["person_key"].ToString();
 
                                         dynamic json = JsonConvert.DeserializeObject(reader["profile"].ToString());
 
@@ -132,6 +176,7 @@ namespace SFCCUserProfileService.API.SqlDB
 
                                         user.last_name = reader["last_name"].ToString();
                                         user.person_key = reader["person_key"].ToString();
+                                        user.id = reader["id"].ToString();
 
 
                                         dynamic json = JsonConvert.DeserializeObject(reader["profile"].ToString());
@@ -156,22 +201,6 @@ namespace SFCCUserProfileService.API.SqlDB
                     return null;
                 }
 
-            }
-            else if (req.Method == "POST")
-            {
-
-
-                return null;
-
-            }
-            else if (req.Method == "DELETE")
-            {
-                return null;
-
-            }
-            else if (req.Method == "PUT")
-            {
-                return null;
             }
             else
             {

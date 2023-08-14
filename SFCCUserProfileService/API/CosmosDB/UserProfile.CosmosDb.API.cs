@@ -17,7 +17,7 @@ using Azure.Storage.Blobs;
 using AutoNumber;
 using SFCCUserProfileService.Models.UserProfile.Profiles;
 using System.Text.Json.Serialization;
-
+using System.Diagnostics;
 
 namespace SFCCUserProfileService.API.CosmosDB
 {
@@ -44,6 +44,8 @@ namespace SFCCUserProfileService.API.CosmosDB
                 try
                 {
                     string id = req.Query["person_key"];
+                    string recordId = req.Query["recordId"];
+
                     string email = req.Query["email"];
                     string firstName = req.Query["firstName"];
                     string lastName = req.Query["lastName"];
@@ -82,8 +84,29 @@ namespace SFCCUserProfileService.API.CosmosDB
                         {
                             query = new QueryDefinition(
                                   query: "SELECT * FROM c  WHERE c.person_key = @id"
-                          )
-                      .WithParameter("@id", id);
+                                  )
+                              .WithParameter("@id", id);
+                                }
+
+                    }
+                    else if (recordId != null)
+                    {
+                        if (id == string.Empty)
+                        {
+                            return new ContentResult()
+                            {
+                                Content = "Record ID is empty",
+                                ContentType = "appliation/json",
+                                StatusCode = 400
+
+                            };
+                        }
+                        else
+                        {
+                            query = new QueryDefinition(
+                                  query: "SELECT * FROM c  WHERE c.record_id = @recordId"
+                                  )
+                              .WithParameter("@recordId", recordId);
                         }
 
                     }
@@ -102,7 +125,7 @@ namespace SFCCUserProfileService.API.CosmosDB
                         else
                         {
                             query = new QueryDefinition(
-                                 query: "SELECT * FROM c  WHERE c.first_name = @firstName"
+                                 query: "SELECT * FROM c  WHERE c.first_name = @firstName order by c.first_name"
                          )
                             .WithParameter("@firstName", firstName);
 
@@ -128,10 +151,10 @@ namespace SFCCUserProfileService.API.CosmosDB
                         {
                             query = new QueryDefinition(
                                   query: "SELECT * FROM c  WHERE c.last_name = @lastName"
-                          )
-                      .WithParameter("@lastName", lastName);
+                                  )
+                              .WithParameter("@lastName", lastName);
 
-                            log.LogInformation("Get Data by Last Name " + lastName + " Time " + DateTime.Now.Ticks);
+                                    log.LogInformation("Get Data by Last Name " + lastName + " Time " + DateTime.Now.Ticks);
 
                         }
 
@@ -152,10 +175,7 @@ namespace SFCCUserProfileService.API.CosmosDB
                         else
                         {
 
-
-
-
-                            query = new QueryDefinition(
+                             query = new QueryDefinition(
                              query: "SELECT c.person_key, c.id, c.first_name," +
                                        "c.last_name,c.record_id," +
                                        "c.profile FROM c JOIN zc IN c.profile.emails " +
@@ -180,18 +200,34 @@ namespace SFCCUserProfileService.API.CosmosDB
 
 
                     using FeedIterator<UserProfile> feed = container.GetItemQueryIterator<UserProfile>(
-                        queryDefinition: query
+                                queryDefinition: query, 
+                                null, 
+                                
+                                requestOptions: new QueryRequestOptions() {
+                                    MaxConcurrency = -1
+
+
+                                }
+                                
+                               
                     );
 
                     log.LogInformation("Call GetItemQueryIterator " + DateTime.Now.Ticks);
 
                     List<UserProfile> users = new List<UserProfile>();
+                    Stopwatch queryExecutionTimeEndToEndTotal = new Stopwatch();
 
                     while (feed.HasMoreResults)
                     {
-                        FeedResponse<UserProfile> response = await feed.ReadNextAsync();
-                        log.LogInformation("feed ReadNextAsync " + DateTime.Now.Ticks);
+                        queryExecutionTimeEndToEndTotal.Start();
 
+                        FeedResponse<UserProfile> response = await feed.ReadNextAsync();
+                        queryExecutionTimeEndToEndTotal.Stop();
+
+
+                        log.LogInformation("feed ReadNextAsync " + DateTime.Now.Ticks);
+                        log.LogInformation("response.RequestCharge =  " + response.RequestCharge);
+                         
 
                         foreach (var item in response)
                         {
@@ -200,6 +236,7 @@ namespace SFCCUserProfileService.API.CosmosDB
                         log.LogInformation("Call ReadNextAsync " + DateTime.Now.Ticks);
 
                     }
+                    log.LogInformation("queryExecutionTimeEndToEndTotal (ms) =  " + queryExecutionTimeEndToEndTotal.ElapsedMilliseconds);
 
 
                     return new OkObjectResult(users);
