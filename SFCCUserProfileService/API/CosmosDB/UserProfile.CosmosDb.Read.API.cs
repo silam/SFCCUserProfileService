@@ -23,9 +23,9 @@ namespace SFCCUserProfileService.API.CosmosDB
 {
     public class GetCosmosDbUserProfile
     {
-        [FunctionName("CosmosDbUserProfiles")]
+        [FunctionName("GetCosmosDbUserProfile")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", "delete", "put", Route = "CosmosDb/UserProfiles")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "CosmosDb/UserProfiles")] HttpRequest req,
             ILogger log, ExecutionContext context)
         {
             var newconfiguration = new ConfigurationBuilder()
@@ -204,9 +204,10 @@ namespace SFCCUserProfileService.API.CosmosDB
                                 null, 
                                 
                                 requestOptions: new QueryRequestOptions() {
-                                    MaxConcurrency = -1
-
-
+                                    MaxConcurrency = -1,
+                                    PopulateIndexMetrics = true,
+                                    ConsistencyLevel = ConsistencyLevel.Session
+                                                                         
                                 }
                                 
                                
@@ -249,190 +250,11 @@ namespace SFCCUserProfileService.API.CosmosDB
                 }
 
             }
-            else if (req.Method == "POST")
-            {
-                try
-                {
-                    var blobServiceClient = new BlobServiceClient(storageaccountconnectionString);
-
-                    var blobOptimisticDataStore = new BlobOptimisticDataStore(blobServiceClient, "unique-ids");
-
-                    var idGen = new UniqueIdGenerator(blobOptimisticDataStore);
-
-                    // generate ids with different scopes
-
-                    //var record_id = idGen.NextId("SFCCUniversalProfile");
-
-
-                    List<UserProfile> users = new List<UserProfile>();
-
-                    string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-
-                    //UserProfile data = JsonConvert.DeserializeObject<UserProfile>(requestBody);
-
-                    List<UserProfile> dataLst = JsonConvert.DeserializeObject<List<UserProfile>>(requestBody);
-
-
-                    // New instance of CosmosClient class
-                    ///using CosmosClient client = new CosmosClient(newconfiguration.GetSection("CosmosDBConnectionString").Value);
-
-                    // Database reference with creation if it does not already exist
-                    Database database = client.GetDatabase(id: "user_profile_db");
-
-
-                    // Container reference with creation if it does not alredy exist
-                    Microsoft.Azure.Cosmos.Container container = database.GetContainer(id: "user_profile");
-
-
-                    for (int i = 0; i < 1; i++)
-                    {
-                        dataLst = JsonConvert.DeserializeObject<List<UserProfile>>(requestBody);
-
-                        foreach (var data in dataLst)
-                        {
-                           var record_id = idGen.NextId("SFCCUniversalProfile");
-
-                            var record_id_str = record_id.ToString();
-                            string person_key = data?.person_key + record_id_str;
-                            string first_name = data?.first_name + record_id_str;
-                            string last_name = data?.last_name + record_id_str;
-                            Profile _profile = data?.profile;
-
-
-                            Profile profile = new Profile();
-
-                            foreach (var email in _profile.emails)
-                            {
-                                email.personal = record_id_str + email.personal;
-                            }
-
-                            foreach (var a in _profile.addresses)
-                            {
-                                a.delivery = record_id_str + " " + a.delivery;
-                            }
-
-                            foreach (var p in _profile.phones)
-                            {
-                                p.number = record_id_str + p.number;
-                            }
-
-                            profile = _profile;
-
-                            UserProfile r = new UserProfile()
-                            {
-                                id = Guid.NewGuid().ToString(),
-                                record_id = record_id.ToString(),
-                                person_key = person_key,
-                                first_name = first_name,
-                                last_name = last_name,
-                                profile = profile
-                            };
-
-
-                            UserProfile item = await container.CreateItemAsync(
-                               item: r,
-                               partitionKey: new PartitionKey(r.record_id.ToString())
-                           );
-
-                            System.Threading.Thread.Sleep(1);
-                            Console.WriteLine("Record " + i);
-                        }
-                    }
-
-
-                    return new OkObjectResult(dataLst);
-
-                }
-                catch (Exception ex)
-                {
-                    return null;
-                }
-
-            }
-            else if (req.Method == "DELETE")
-            {
-                try
-                {
-                    List<UserProfile> users = new List<UserProfile>();
-
-                    string record_id = req.Query["record_id"];
-
-                    string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-
-                    UserProfile data = JsonConvert.DeserializeObject<UserProfile>(requestBody);
-
-
-                    //using CosmosClient client = new CosmosClient(newconfiguration.GetSection("CosmosDBConnectionString").Value);
-                    Database database = client.GetDatabase(id: "user_profile_db");
-
-
-                    Microsoft.Azure.Cosmos.Container container = database.GetContainer(id: "user_profile");
-                    //ResponseMessage deleteResponse = await container.DeleteAllItemsByPartitionKeyStreamAsync(new PartitionKey("Contoso"));
-
-                    // Delete an item. Note we must provide the partition key value and id of the item to delete
-                    ItemResponse<UserProfile> userResponse = await container.DeleteItemAsync<UserProfile>(data.id, new PartitionKey(data.record_id));
-                    Console.WriteLine("Deleted   partitionKey and id [{0},{1}]\n", record_id, record_id);
-
-                    return new OkObjectResult(new { message = "Item is deleted" });
-                }
-                catch (Exception e)
-                {
-                    var error = new { error = e.Message };
-                    return new ContentResult()
-                    {
-                        Content = e.Message,
-                        ContentType = "appliation/json",
-                        StatusCode = 503
-
-                    };
-                }
-
-            }
-            else if (req.Method == "PUT")
-            {
-                try
-                {
-                    //using CosmosClient client = new CosmosClient(newconfiguration.GetSection("CosmosDBConnectionString").Value);
-                    Database database = client.GetDatabase(id: "user_profile_db");
-                    string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-
-                    UserProfile data = JsonConvert.DeserializeObject<UserProfile>(requestBody);
-                    string id = data?.id;
-                    string record_id = data?.record_id;
-                    string first_name = data?.first_name;
-                    string last_name = data?.last_name;
-
-
-                    Microsoft.Azure.Cosmos.Container container = database.GetContainer(id: "user_profile");
-
-                    ItemResponse<UserProfile> user = await container.ReadItemAsync<UserProfile>(id, new PartitionKey(record_id));
-                    var itemBody = user.Resource;
-
-                    // update FirstName
-                    itemBody.first_name = first_name == null ? itemBody.first_name : first_name;
-                    itemBody.last_name = last_name == null ? itemBody.last_name : last_name;
-
-
-                    // replace/update the item with the updated content
-                    ItemResponse<UserProfile> newUser = await container.ReplaceItemAsync(itemBody, itemBody.id, new PartitionKey(itemBody.record_id));
-
-                    return new OkObjectResult(itemBody);
-                }
-                catch (Exception e)
-                {
-                    var error = new { error = e.Message };
-                    return new ContentResult()
-                    {
-                        Content = e.Message,
-                        ContentType = "appliation/json",
-                        StatusCode = 503
-
-                    };
-                }
-            }
+            
+            
             else
             {
-                return new OkObjectResult(null);
+                return new OkObjectResult("Error not GET");
 
             }
 
