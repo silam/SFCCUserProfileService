@@ -18,6 +18,7 @@ using AutoNumber;
 using SFCCUserProfileService.Models.UserProfile.Profiles;
 using System.Text.Json.Serialization;
 using System.Diagnostics;
+using Microsoft.Azure.Cosmos.Serialization.HybridRow.RecordIO;
 
 namespace SFCCUserProfileService.API.CosmosDB
 {
@@ -43,8 +44,9 @@ namespace SFCCUserProfileService.API.CosmosDB
             {
                 try
                 {
-                    string id = req.Query["person_key"];
+                    string id = req.Query["id"];
                     string recordId = req.Query["recordId"];
+                    string personKey = req.Query["person_key"];
 
                     string email = req.Query["email"];
                     string firstName = req.Query["firstName"];
@@ -68,13 +70,19 @@ namespace SFCCUserProfileService.API.CosmosDB
 
                     QueryDefinition query;
                     // Create query using a SQL string and parameters
-                    if (id != null)
+                    if (id != null && recordId != null)
                     {
-                        if (id == string.Empty)
+                        ItemResponse<UserProfile> response = await container.ReadItemAsync<UserProfile>(id, new PartitionKey(recordId));
+                        UserProfile uf = response.Resource;
+                        return new OkObjectResult(uf);
+                    }
+                    else if (personKey != null)
+                    { 
+                        if (personKey == string.Empty)
                         {
                             return new ContentResult()
                             {
-                                Content = "ID is empty",
+                                Content = "personKey is empty",
                                 ContentType = "appliation/json",
                                 StatusCode = 400
 
@@ -83,15 +91,15 @@ namespace SFCCUserProfileService.API.CosmosDB
                         else
                         {
                             query = new QueryDefinition(
-                                  query: "SELECT * FROM c  WHERE c.person_key = @id"
+                                  query: "SELECT * FROM c  WHERE c.person_key = @personKey"
                                   )
-                              .WithParameter("@id", id);
+                              .WithParameter("@personKey", personKey);
                                 }
 
                     }
                     else if (recordId != null)
                     {
-                        if (id == string.Empty)
+                        if (recordId == string.Empty)
                         {
                             return new ContentResult()
                             {
