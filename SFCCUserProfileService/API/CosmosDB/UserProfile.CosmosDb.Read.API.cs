@@ -19,6 +19,7 @@ using SFCCUserProfileService.Models.UserProfile.Profiles;
 using System.Text.Json.Serialization;
 using System.Diagnostics;
 using Microsoft.Azure.Cosmos.Serialization.HybridRow.RecordIO;
+using System.Text.Json.Nodes;
 
 namespace SFCCUserProfileService.API.CosmosDB
 {
@@ -72,9 +73,17 @@ namespace SFCCUserProfileService.API.CosmosDB
                     // Create query using a SQL string and parameters
                     if (id != null && recordId != null)
                     {
-                        ItemResponse<UserProfile> response = await container.ReadItemAsync<UserProfile>(id, new PartitionKey(recordId));
-                        UserProfile uf = response.Resource;
-                        return new OkObjectResult(uf);
+                        var response = await container.ReadItemStreamAsync(id, new PartitionKey(recordId));
+                        //UserProfile uf = response.Resource;
+
+                        using (StreamReader streamReader = new StreamReader(response.Content))
+                        {
+                            string content = await streamReader.ReadToEndAsync();
+                            
+                            return new OkObjectResult(content);
+                        }
+
+                        //return new OkObjectResult(response',');
                     }
                     else if (personKey != null)
                     { 
@@ -207,7 +216,7 @@ namespace SFCCUserProfileService.API.CosmosDB
                     }
 
 
-                    using FeedIterator<UserProfile> feed = container.GetItemQueryIterator<UserProfile>(
+                    using FeedIterator feed = container.GetItemQueryStreamIterator(
                                 queryDefinition: query, 
                                 null, 
                                 
@@ -230,18 +239,39 @@ namespace SFCCUserProfileService.API.CosmosDB
                     {
                         queryExecutionTimeEndToEndTotal.Start();
 
-                        FeedResponse<UserProfile> response = await feed.ReadNextAsync();
-                        queryExecutionTimeEndToEndTotal.Stop();
+                        // FeedResponse<UserProfile> response = await feed.ReadNextAsync();
+                        using (var response = await feed.ReadNextAsync())
+                        {
+                            if (!response.IsSuccessStatusCode)
+                            {
+                                //Handle and log exception
+                                return new BadRequestResult(); 
+                            }
+
+                            //Read or do other operations with the stream
+                            using (StreamReader streamReader = new StreamReader(response.Content))
+                            {
+                                string content = await streamReader.ReadToEndAsync();
+                                //dynamic res = JsonConvert.DeserializeObject(content);
+                                //JsonObject obj = new JsonObject(res);
+                                //JsonArray jsonArray = new JsonArray();
+                                ////simply put obj into jsonArray
+                                //jsonArray.put(obj);
+                                return new OkObjectResult(content);
+                            }
+                        }
+
+                            queryExecutionTimeEndToEndTotal.Stop();
 
 
                         log.LogInformation("feed ReadNextAsync " + DateTime.Now.Ticks);
-                        log.LogInformation("response.RequestCharge =  " + response.RequestCharge);
+                        //log.LogInformation("response.RequestCharge =  " + response.RequestCharge);
                          
 
-                        foreach (var item in response)
-                        {
-                            users.Add(item);
-                        }
+                        //foreach (var item in response)
+                        //{
+                        //    users.Add(item);
+                        //}
                         log.LogInformation("Call ReadNextAsync " + DateTime.Now.Ticks);
 
                     }
